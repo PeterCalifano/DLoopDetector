@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(DLoopDetector)
 include(ExternalProject)
 
-option(BUILD_DemoBRIEF  "Build demo application with BRIEF features" OFF)
+option(BUILD_DemoBRIEF  "Build demo application with BRIEF features" ON)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)

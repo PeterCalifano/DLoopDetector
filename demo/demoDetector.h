@@ -165,7 +165,7 @@ void demoDetector<TVocabulary, TDetector, TDescriptor>::run
   
   // Initiate loop detector with the vocabulary 
   cout << "Processing sequence..." << endl;
-  TDetector detector(voc, params);
+  TDetector detector(voc, params); // FIXME this seems to cause the program to remain stuck
   
   // Process images
   vector<cv::KeyPoint> keys;
