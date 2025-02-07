@@ -160,12 +160,18 @@ void demoDetector<TVocabulary, TDetector, TDescriptor>::run
   //
   
   // Load the vocabulary to use
-  cout << "Loading " << name << " vocabulary..." << endl;
-  TVocabulary voc(m_vocfile);
-  
+  cout << "Loading " << name << " vocabulary from file: " << m_vocfile << " ..." << endl;
+  // Check file is found
+  if(!DUtils::FileFunctions::FileExists(m_vocfile.c_str()))
+  {
+    cerr << "Vocabulary file not found." << endl;
+    return;
+  }
+  TVocabulary voc(m_vocfile); // FIXME this seems to cause the program to remain stuck
+
   // Initiate loop detector with the vocabulary 
   cout << "Processing sequence..." << endl;
-  TDetector detector(voc, params); // FIXME this seems to cause the program to remain stuck
+  TDetector detector(voc, params);
   
   // Process images
   vector<cv::KeyPoint> keys;

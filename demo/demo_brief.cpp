@@ -28,12 +28,13 @@ using namespace std;
 
 // ----------------------------------------------------------------------------
 
-static const char *VOC_FILE = "./resources/brief_k10L6.voc.gz";
-static const char *IMAGE_DIR = "./resources/images";
-static const char *POSE_FILE = "./resources/pose.txt";
+static const char *DATA_PATH = "/home/peterc/devDir/SLAM-repos/loopClosures_for_SpaceNav/lib/DLoopDetector_PeterCdev/resources/";
+static const std::string VOC_FILE = std::string(DATA_PATH) + "brief_k10L6.voc.gz";
+static const std::string IMAGE_DIR = std::string(DATA_PATH) + "images";
+static const std::string POSE_FILE = std::string(DATA_PATH) + "pose.txt";
 static const int IMAGE_W = 640; // image size
 static const int IMAGE_H = 480;
-static const char *BRIEF_PATTERN_FILE = "./resources/brief_pattern.yml";
+static const std::string BRIEF_PATTERN_FILE = std::string(DATA_PATH) + "brief_pattern.yml";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
