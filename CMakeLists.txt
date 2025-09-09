@@ -1,8 +1,12 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 project(DLoopDetector)
 include(ExternalProject)
 
-option(BUILD_DemoBRIEF  "Build demo application with BRIEF features" ON)
+# Set CXX standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+
+option(BUILD_BINARY_PROGRAMS  "Build standalone programs to run loop detector on a sequence of images" ON)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -63,20 +67,24 @@ add_custom_target(Dependencies ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} DEPENDS DBoW
 
 include_directories(include/DLoopDetector/)
 
-if(BUILD_DemoBRIEF)
+#### Binary (standalone) programs configuration
+if(BUILD_BINARY_PROGRAMS)
+ # add_subdirectory(src) TODO move definition to src/CMakeLists.txt
+
   add_executable(demo_brief demo/demo_brief.cpp)
   add_dependencies(demo_brief DLib_dep DBoW2_dep)
   target_link_libraries(demo_brief ${OpenCV_LIBS} ${DLib_LIBS} ${DBoW2_LIBS})
   target_include_directories(demo_brief PUBLIC ${DLib_INCLUDE_DIRS} ${DBoW2_INCLUDE_DIRS})
   set_target_properties(demo_brief PROPERTIES CXX_STANDARD 11)
-endif(BUILD_DemoBRIEF)
+
+endif(BUILD_BINARY_PROGRAMS)
 
 #if(BUILD_DemoSURF)
 #  add_executable(demo_surf demo/demo_surf.cpp)
 #  target_link_libraries(demo_surf ${OpenCV_LIBS} ${DLib_LIBS} ${DBoW2_LIBS})
 #endif(BUILD_DemoSURF)
 
-if(BUILD_DemoBRIEF)
+if(BUILD_BINARY_PROGRAMS)
   set(RESOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources/)
   set(RESOURCE_FILE ${CMAKE_CURRENT_BINARY_DIR}/resources.tar.gz)
   if(NOT EXISTS ${RESOURCE_DIR})
@@ -88,7 +96,7 @@ https://drive.google.com/uc?export=download&id=1MpZwPjXDAUxKfSTpeCjG0PAUpaeWuo7D
 into ${RESOURCE_FILE} and run cmake again.")
     endif()
   endif(NOT EXISTS ${RESOURCE_DIR})
-endif(BUILD_DemoBRIEF)
+endif(BUILD_BINARY_PROGRAMS)
 
 configure_file(src/DLoopDetector.cmake.in
   "${PROJECT_BINARY_DIR}/DLoopDetectorConfig.cmake" @ONLY)
