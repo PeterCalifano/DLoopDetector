@@ -27,7 +27,10 @@
 #include "DUtilsCV.h"
 #include "DVision.h"
 
-using namespace std;
+//using namespace std;
+// Usings from std library
+using std::vector, std::min, std::stringstream;
+
 using namespace DUtils;
 using namespace DBoW2;
 
