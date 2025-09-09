@@ -40,8 +40,19 @@ if(DEFINED OpenCV_DIR)
     set(DEPENDENCY_CMAKE_ARGS ${DEPENDENCY_CMAKE_ARGS} -DOpenCV_DIR=${OpenCV_DIR})
 endif()
 
+
+find_package(OpenMP QUIET)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
+
+if (OpenMP_CXX_FOUND)
+    message("OpenMP found")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+else()
+    set(OpenMP_CXX_FOUND OFF)
+endif()
+
+
 
 # Define macro to get dependencies info
 macro(GetDependency name other_dependency)
