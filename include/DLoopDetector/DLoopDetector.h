@@ -45,11 +45,6 @@
 #ifndef __D_T_LOOP_DETECTOR__
 #define __D_T_LOOP_DETECTOR__
 
-/// Loop detector for sequences of monocular images
-namespace DLoopDetector
-{
-}
-
 #include "DBoW2.h"
 #include "TemplatedLoopDetector.h"
 #include "FORB.h"
@@ -57,15 +52,13 @@ namespace DLoopDetector
 #include "FSurf64.h"
 
 /// ORB Loop Detector
-typedef DLoopDetector::TemplatedLoopDetector
-  <FORB::TDescriptor, FORB> OrbLoopDetector;
+typedef DLoopDetector::TemplatedLoopDetector<FORB::TDescriptor, FORB> OrbLoopDetector;
 
 /// SURF64 Loop Detector
 typedef DLoopDetector::TemplatedLoopDetector<FSurf64::TDescriptor, FSurf64> Surf64LoopDetector;
 
 /// BRIEF Loop Detector
-typedef DLoopDetector::TemplatedLoopDetector
-  <FBrief::TDescriptor, FBrief> BriefLoopDetector;
+typedef DLoopDetector::TemplatedLoopDetector<FBrief::TDescriptor, FBrief> BriefLoopDetector;
 
 #endif
 

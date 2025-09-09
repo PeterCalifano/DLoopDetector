@@ -1,18 +1,28 @@
-cmake_minimum_required(VERSION 3.10)
-project(DLoopDetector)
-include(ExternalProject)
+option (BUILD_AS_STANDALONE_PROJECT "Build DLoopDetector as a standalone project" ON) #DEVNOTE must be true to build DLoopDetector in the current configuration!
+option (BUILD_BINARY_PROGRAMS  "Build standalone programs to run loop detector on a sequence of images" ON)
 
-# Set CXX standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+if (BUILD_AS_STANDALONE_PROJECT)
+  cmake_minimum_required(VERSION 3.10)
+  project(DLoopDetector)
 
-option(BUILD_BINARY_PROGRAMS  "Build standalone programs to run loop detector on a sequence of images" ON)
+  # Set CXX standard
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
+# Set default build type to Release
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
     "MinSizeRel" "RelWithDebInfo")
 endif()
+
+#set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG")
+
+else()
+
+endif()
+
+include(ExternalProject)
 
 if(MSVC)
   add_compile_options(/W4)
@@ -20,12 +30,12 @@ else()
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-set(HDRS
-  include/DLoopDetector/DLoopDetector.h         include/DLoopDetector/TemplatedLoopDetector.h)
+set(HDRS include/DLoopDetector/DLoopDetector.h include/DLoopDetector/TemplatedLoopDetector.h)
 
 set(DEPENDENCY_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies)
 set(DEPENDENCY_INSTALL_DIR ${DEPENDENCY_DIR}/install)
 set(DEPENDENCY_CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
+
 if(DEFINED OpenCV_DIR)
     set(DEPENDENCY_CMAKE_ARGS ${DEPENDENCY_CMAKE_ARGS} -DOpenCV_DIR=${OpenCV_DIR})
 endif()
@@ -33,6 +43,7 @@ endif()
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+# Define macro to get dependencies info
 macro(GetDependency name other_dependency)
   find_package(${name} QUIET
     PATHS ${DEPENDENCY_INSTALL_DIR})
@@ -69,13 +80,9 @@ include_directories(include/DLoopDetector/)
 
 #### Binary (standalone) programs configuration
 if(BUILD_BINARY_PROGRAMS)
- # add_subdirectory(src) TODO move definition to src/CMakeLists.txt
 
-  add_executable(demo_brief demo/demo_brief.cpp)
-  add_dependencies(demo_brief DLib_dep DBoW2_dep)
-  target_link_libraries(demo_brief ${OpenCV_LIBS} ${DLib_LIBS} ${DBoW2_LIBS})
-  target_include_directories(demo_brief PUBLIC ${DLib_INCLUDE_DIRS} ${DBoW2_INCLUDE_DIRS})
-  set_target_properties(demo_brief PROPERTIES CXX_STANDARD 11)
+  include_directories(src)
+  add_subdirectory(src)
 
 endif(BUILD_BINARY_PROGRAMS)
 
@@ -98,12 +105,16 @@ into ${RESOURCE_FILE} and run cmake again.")
   endif(NOT EXISTS ${RESOURCE_DIR})
 endif(BUILD_BINARY_PROGRAMS)
 
+# Install configuration
 configure_file(src/DLoopDetector.cmake.in
   "${PROJECT_BINARY_DIR}/DLoopDetectorConfig.cmake" @ONLY)
 
 install(DIRECTORY include/DLoopDetector DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DLoopDetectorConfig.cmake"
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
+
 install(FILES "${PROJECT_BINARY_DIR}/DLoopDetectorConfig.cmake" 
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DLoopDetector/)
+
 install(DIRECTORY ${DEPENDENCY_INSTALL_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX} OPTIONAL)
