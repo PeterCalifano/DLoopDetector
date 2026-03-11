@@ -5,6 +5,13 @@ if (BUILD_AS_STANDALONE_PROJECT)
   cmake_minimum_required(VERSION 3.10)
   project(DLoopDetector)
 
+  # Set paths to install dir of DBoW2 and DLib
+  set(DBoW2_INSTALL_DIR "/home/peterc/devDir/SLAM-repos/loopClosures_for_SpaceNav/lib/DBoW2_PeterCdev/install" CACHE PATH "DBoW2 install directory")
+  set(DLib_INSTALL_DIR  "/home/peterc/devDir/SLAM-repos/loopClosures_for_SpaceNav/lib/DLib_PeterCdev/install"  CACHE PATH "DLib install directory")
+
+  list(APPEND CMAKE_PREFIX_PATH "${DBoW2_INSTALL_DIR}")
+  list(APPEND CMAKE_PREFIX_PATH "${DLib_INSTALL_DIR}")
+
   # Set CXX standard
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED OFF)
@@ -40,9 +47,14 @@ if(DEFINED OpenCV_DIR)
     set(DEPENDENCY_CMAKE_ARGS ${DEPENDENCY_CMAKE_ARGS} -DOpenCV_DIR=${OpenCV_DIR})
 endif()
 
+if (BUILD_AS_STANDALONE_PROJECT)
+  find_package(OpenMP QUIET)
+  find_package(OpenCV REQUIRED)
 
-find_package(OpenMP QUIET)
-find_package(OpenCV REQUIRED)
+  find_package(DBoW2 REQUIRED)
+  find_package(DLib REQUIRED)
+endif()
+
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 if (OpenMP_CXX_FOUND)
@@ -51,8 +63,6 @@ if (OpenMP_CXX_FOUND)
 else()
     set(OpenMP_CXX_FOUND OFF)
 endif()
-
-
 
 # Define macro to get dependencies info
 macro(GetDependency name other_dependency)
@@ -83,10 +93,12 @@ macro(GetDependency name other_dependency)
   endif(${${name}_FOUND})
 endmacro(GetDependency)
 
-GetDependency(DLib "")
-GetDependency(DBoW2 DLib)
-add_custom_target(Dependencies ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} DEPENDS DBoW2_dep DLib_dep)
+# DEVNOTE removed
+#GetDependency(DLib "")
+#GetDependency(DBoW2 DLib)
+#add_custom_target(Dependencies ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} DEPENDS DBoW2_dep DLib_dep)
 
+# Add include directories
 include_directories(include/DLoopDetector/)
 
 #### Binary (standalone) programs configuration
@@ -103,6 +115,7 @@ endif(BUILD_BINARY_PROGRAMS)
 #endif(BUILD_DemoSURF)
 
 if(BUILD_BINARY_PROGRAMS)
+
   set(RESOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources/)
   set(RESOURCE_FILE ${CMAKE_CURRENT_BINARY_DIR}/resources.tar.gz)
   if(NOT EXISTS ${RESOURCE_DIR})
@@ -114,7 +127,10 @@ https://drive.google.com/uc?export=download&id=1MpZwPjXDAUxKfSTpeCjG0PAUpaeWuo7D
 into ${RESOURCE_FILE} and run cmake again.")
     endif()
   endif(NOT EXISTS ${RESOURCE_DIR})
+
 endif(BUILD_BINARY_PROGRAMS)
+
+# DEVNOTE: TODO update configuration
 
 # Install configuration
 configure_file(src/DLoopDetector.cmake.in
