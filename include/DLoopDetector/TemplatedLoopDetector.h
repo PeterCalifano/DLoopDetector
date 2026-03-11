@@ -23,9 +23,9 @@
 #include "QueryResults.h"
 #include "BowVector.h"
 
-#include "DUtils.h"
-#include "DUtilsCV.h"
-#include "DVision.h"
+#include <DUtils/DUtils.h>
+#include <DUtilsCV/DUtilsCV.h>
+#include <DVision/DVision.h>
 
 //using namespace std;
 // Usings from std library

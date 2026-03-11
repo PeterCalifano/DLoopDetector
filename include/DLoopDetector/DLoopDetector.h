@@ -45,7 +45,7 @@
 #ifndef __D_T_LOOP_DETECTOR__
 #define __D_T_LOOP_DETECTOR__
 
-#include "DBoW2.h"
+#include <DBoW2/DBoW2.h>
 #include "TemplatedLoopDetector.h"
 #include "FORB.h"
 #include "FBrief.h"
