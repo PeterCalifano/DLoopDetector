@@ -92,8 +92,8 @@ namespace DLoopDetector
     };
 
     /// TDescriptor: class of descriptor
-    /// F: class of descriptor functions
-    template <class TDescriptor, class F>
+    /// TFeature: class of descriptor functions
+    template <class TDescriptor, class TFeature>
     /// Generic Loop detector
     class TemplatedLoopDetector
     {
@@ -136,7 +136,7 @@ namespace DLoopDetector
             /// Max separation between two queries to consider them consistent
             int max_distance_between_queries;
 
-            // These are for the RANSAC to compute the F
+            // These are for the RANSAC to compute the TFeature
 
             /// Min number of inliers when computing a fundamental matrix
             int min_Fpoints;
@@ -193,7 +193,7 @@ namespace DLoopDetector
          * @param voc vocabulary
          * @param params loop detector parameters
          */
-        TemplatedLoopDetector(const TemplatedVocabulary<TDescriptor, F> &voc,
+        TemplatedLoopDetector(const TemplatedVocabulary<TDescriptor, TFeature> &voc,
                               const Parameters &params = Parameters());
 
         /**
@@ -202,7 +202,7 @@ namespace DLoopDetector
          * @param db database to copy
          * @param params loop detector parameters
          */
-        TemplatedLoopDetector(const TemplatedDatabase<TDescriptor, F> &db,
+        TemplatedLoopDetector(const TemplatedDatabase<TDescriptor, TFeature> &db,
                               const Parameters &params = Parameters());
 
         /**
@@ -224,13 +224,13 @@ namespace DLoopDetector
          * Retrieves a reference to the database used by the loop detector
          * @return const reference to database
          */
-        inline const TemplatedDatabase<TDescriptor, F> &getDatabase() const;
+        inline const TemplatedDatabase<TDescriptor, TFeature> &getDatabase() const;
 
         /**
          * Retrieves a reference to the vocabulary used by the loop detector
          * @return const reference to vocabulary
          */
-        inline const TemplatedVocabulary<TDescriptor, F> &getVocabulary() const;
+        inline const TemplatedVocabulary<TDescriptor, TFeature> &getVocabulary() const;
 
         /**
          * Sets the database to use. The contents of the database and the detector
@@ -245,7 +245,7 @@ namespace DLoopDetector
          * Sets a new DBoW2 database created from the given vocabulary
          * @param voc vocabulary to copy
          */
-        void setVocabulary(const TemplatedVocabulary<TDescriptor, F> &voc);
+        void setVocabulary(const TemplatedVocabulary<TDescriptor, TFeature> &voc);
 
         /**
          * Allocates some memory for the first entries
@@ -500,7 +500,7 @@ namespace DLoopDetector
       protected:
         /// Database
         // The loop detector stores its own copy of the database
-        TemplatedDatabase<TDescriptor, F> *m_database;
+        TemplatedDatabase<TDescriptor, TFeature> *m_database;
 
         /// KeyPoints of images
         vector<vector<cv::KeyPoint>> m_image_keys;
@@ -523,16 +523,16 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    TemplatedLoopDetector<TDescriptor, F>::Parameters::Parameters() : use_nss(true), alpha(0.3), k(4), geom_check(GEOM_DI), di_levels(0)
+    template <class TDescriptor, class TFeature>
+    TemplatedLoopDetector<TDescriptor, TFeature>::Parameters::Parameters() : use_nss(true), alpha(0.3), k(4), geom_check(GEOM_DI), di_levels(0)
     {
         set(1);
     }
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    TemplatedLoopDetector<TDescriptor, F>::Parameters::Parameters(int height, int width, float frequency, bool nss, float _alpha,
+    template <class TDescriptor, class TFeature>
+    TemplatedLoopDetector<TDescriptor, TFeature>::Parameters::Parameters(int height, int width, float frequency, bool nss, float _alpha,
                                                                   int _k, GeometricalCheck geom, int dilevels)
         : image_rows(height), image_cols(width), use_nss(nss), alpha(_alpha), k(_k),
           geom_check(geom), di_levels(dilevels)
@@ -542,8 +542,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::Parameters::set(float f)
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::Parameters::set(float f)
     {
         dislocal = 20 * f;
         max_db_results = 50 * f;
@@ -563,19 +563,19 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    TemplatedLoopDetector<TDescriptor, F>::TemplatedLoopDetector(const Parameters &params)
+    template <class TDescriptor, class TFeature>
+    TemplatedLoopDetector<TDescriptor, TFeature>::TemplatedLoopDetector(const Parameters &params)
         : m_database(NULL), m_params(params)
     {
     }
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    TemplatedLoopDetector<TDescriptor, F>::TemplatedLoopDetector(const TemplatedVocabulary<TDescriptor, F> &voc, const Parameters &params)
+    template <class TDescriptor, class TFeature>
+    TemplatedLoopDetector<TDescriptor, TFeature>::TemplatedLoopDetector(const TemplatedVocabulary<TDescriptor, TFeature> &voc, const Parameters &params)
         : m_params(params)
     {
-        m_database = new TemplatedDatabase<TDescriptor, F>(voc,
+        m_database = new TemplatedDatabase<TDescriptor, TFeature>(voc,
                                                            params.geom_check == GEOM_DI, params.di_levels);
 
         m_fsolver.setImageSize(params.image_cols, params.image_rows);
@@ -583,21 +583,21 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::setVocabulary(const TemplatedVocabulary<TDescriptor, F> &voc)
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::setVocabulary(const TemplatedVocabulary<TDescriptor, TFeature> &voc)
     {
         delete m_database;
-        m_database = new TemplatedDatabase<TDescriptor, F>(voc,
+        m_database = new TemplatedDatabase<TDescriptor, TFeature>(voc,
                                                            m_params.geom_check == GEOM_DI, m_params.di_levels);
     }
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    TemplatedLoopDetector<TDescriptor, F>::TemplatedLoopDetector(const TemplatedDatabase<TDescriptor, F> &db, const Parameters &params)
+    template <class TDescriptor, class TFeature>
+    TemplatedLoopDetector<TDescriptor, TFeature>::TemplatedLoopDetector(const TemplatedDatabase<TDescriptor, TFeature> &db, const Parameters &params)
         : m_params(params)
     {
-        m_database = new TemplatedDatabase<TDescriptor, F>(db.getVocabulary(),
+        m_database = new TemplatedDatabase<TDescriptor, TFeature>(db.getVocabulary(),
                                                            params.geom_check == GEOM_DI, params.di_levels);
 
         m_fsolver.setImageSize(params.image_cols, params.image_rows);
@@ -605,9 +605,9 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
+    template <class TDescriptor, class TFeature>
     template <class T>
-    TemplatedLoopDetector<TDescriptor, F>::TemplatedLoopDetector(const T &db, const Parameters &params)
+    TemplatedLoopDetector<TDescriptor, TFeature>::TemplatedLoopDetector(const T &db, const Parameters &params)
         : m_params(params)
     {
         m_database = new T(db);
@@ -618,9 +618,9 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
+    template <class TDescriptor, class TFeature>
     template <class T>
-    void TemplatedLoopDetector<TDescriptor, F>::setDatabase(const T &db)
+    void TemplatedLoopDetector<TDescriptor, TFeature>::setDatabase(const T &db)
     {
         delete m_database;
         m_database = new T(db);
@@ -629,8 +629,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    TemplatedLoopDetector<TDescriptor, F>::~TemplatedLoopDetector(void)
+    template <class TDescriptor, class TFeature>
+    TemplatedLoopDetector<TDescriptor, TFeature>::~TemplatedLoopDetector(void)
     {
         delete m_database;
         m_database = NULL;
@@ -638,8 +638,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::allocate(int nentries, int nkeys)
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::allocate(int nentries, int nkeys)
     {
         const int sz = (const int)m_image_keys.size();
 
@@ -663,26 +663,26 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    inline const TemplatedDatabase<TDescriptor, F> &
-    TemplatedLoopDetector<TDescriptor, F>::getDatabase() const
+    template <class TDescriptor, class TFeature>
+    inline const TemplatedDatabase<TDescriptor, TFeature> &
+    TemplatedLoopDetector<TDescriptor, TFeature>::getDatabase() const
     {
         return *m_database;
     }
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    inline const TemplatedVocabulary<TDescriptor, F> &
-    TemplatedLoopDetector<TDescriptor, F>::getVocabulary() const
+    template <class TDescriptor, class TFeature>
+    inline const TemplatedVocabulary<TDescriptor, TFeature> &
+    TemplatedLoopDetector<TDescriptor, TFeature>::getVocabulary() const
     {
         return m_database->getVocabulary();
     }
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    bool TemplatedLoopDetector<TDescriptor, F>::detectLoop(
+    template <class TDescriptor, class TFeature>
+    bool TemplatedLoopDetector<TDescriptor, TFeature>::detectLoop(
         const std::vector<cv::KeyPoint> &keys,
         const std::vector<TDescriptor> &descriptors,
         DetectionResult &match)
@@ -850,8 +850,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    inline void TemplatedLoopDetector<TDescriptor, F>::clear()
+    template <class TDescriptor, class TFeature>
+    inline void TemplatedLoopDetector<TDescriptor, TFeature>::clear()
     {
         m_database->clear();
         m_window.nentries = 0;
@@ -859,8 +859,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::computeIslands(QueryResults &q, vector<tIsland> &islands) const
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::computeIslands(QueryResults &q, vector<tIsland> &islands) const
     {
         islands.clear();
 
@@ -936,8 +936,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    double TemplatedLoopDetector<TDescriptor, F>::calculateIslandScore(
+    template <class TDescriptor, class TFeature>
+    double TemplatedLoopDetector<TDescriptor, TFeature>::calculateIslandScore(
         const QueryResults &q, unsigned int i_first, unsigned int i_last) const
     {
         // get the sum of the scores
@@ -949,8 +949,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::updateTemporalWindow(const tIsland &matched_island, EntryId entry_id)
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::updateTemporalWindow(const tIsland &matched_island, EntryId entry_id)
     {
         // if m_window.nentries > 0, island > m_window.last_matched_island and
         // entry_id > m_window.last_query_id hold
@@ -989,8 +989,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    bool TemplatedLoopDetector<TDescriptor, F>::isGeometricallyConsistent_DI(
+    template <class TDescriptor, class TFeature>
+    bool TemplatedLoopDetector<TDescriptor, TFeature>::isGeometricallyConsistent_DI(
         EntryId old_entry, const std::vector<cv::KeyPoint> &keys,
         const std::vector<TDescriptor> &descriptors,
         const FeatureVector &bowvec) const
@@ -1075,8 +1075,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    bool TemplatedLoopDetector<TDescriptor, F>::
+    template <class TDescriptor, class TFeature>
+    bool TemplatedLoopDetector<TDescriptor, TFeature>::
         isGeometricallyConsistent_Exhaustive(
             const std::vector<cv::KeyPoint> &old_keys,
             const std::vector<TDescriptor> &old_descriptors,
@@ -1135,13 +1135,13 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::getFlannStructure(
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::getFlannStructure(
         const std::vector<TDescriptor> &descriptors,
         cv::FlannBasedMatcher &flann_structure) const
     {
         vector<cv::Mat> features(1);
-        F::toMat32F(descriptors, features[0]);
+        TFeature::toMat32F(descriptors, features[0]);
 
         flann_structure.clear();
         flann_structure.add(features);
@@ -1150,8 +1150,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    bool TemplatedLoopDetector<TDescriptor, F>::isGeometricallyConsistent_Flann(EntryId old_entry,
+    template <class TDescriptor, class TFeature>
+    bool TemplatedLoopDetector<TDescriptor, TFeature>::isGeometricallyConsistent_Flann(EntryId old_entry,
                                                                                 const std::vector<cv::KeyPoint> &keys,
                                                                                 const std::vector<TDescriptor> &,
                                                                                 cv::FlannBasedMatcher &flann_structure) const
@@ -1163,7 +1163,7 @@ namespace DLoopDetector
         const vector<cv::KeyPoint> &cur_keys = keys;
 
         vector<cv::Mat> queryDescs_v(1);
-        F::toMat32F(old_descs, queryDescs_v[0]);
+        TFeature::toMat32F(old_descs, queryDescs_v[0]);
 
         vector<vector<cv::DMatch>> matches;
 
@@ -1238,8 +1238,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::getMatches_neighratio(
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::getMatches_neighratio(
         const vector<TDescriptor> &A, const vector<unsigned int> &i_A,
         const vector<TDescriptor> &B, const vector<unsigned int> &i_B,
         vector<unsigned int> &i_match_A, vector<unsigned int> &i_match_B) const
@@ -1261,7 +1261,7 @@ namespace DLoopDetector
             j = 0;
             for (bit = i_B.begin(); bit != i_B.end(); ++bit, ++j)
             {
-                double d = F::distance(A[*ait], B[*bit]);
+                double d = TFeature::distance(A[*ait], B[*bit]);
 
                 // in i
                 if (d < best_dist_1)
@@ -1289,7 +1289,7 @@ namespace DLoopDetector
                 else
                 {
                     unsigned int idx_A = i_match_A[bit - i_match_B.begin()];
-                    double d = F::distance(A[idx_A], B[idx_B]);
+                    double d = TFeature::distance(A[idx_A], B[idx_B]);
                     if (best_dist_1 < d)
                     {
                         i_match_A[bit - i_match_B.begin()] = *ait;
@@ -1301,8 +1301,8 @@ namespace DLoopDetector
 
     // --------------------------------------------------------------------------
 
-    template <class TDescriptor, class F>
-    void TemplatedLoopDetector<TDescriptor, F>::removeLowScores(QueryResults &q,
+    template <class TDescriptor, class TFeature>
+    void TemplatedLoopDetector<TDescriptor, TFeature>::removeLowScores(QueryResults &q,
                                                                 double threshold) const
     {
         // remember scores in q are in descending order now
