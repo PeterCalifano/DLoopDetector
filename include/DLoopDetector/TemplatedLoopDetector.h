@@ -18,10 +18,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
 
-#include "TemplatedVocabulary.h"
-#include "TemplatedDatabase.h"
-#include "QueryResults.h"
-#include "BowVector.h"
+#include <DBoW2/TemplatedVocabulary.h>
+#include <DBoW2/TemplatedDatabase.h>
+#include <DBoW2/QueryResults.h>
+#include <DBoW2/BowVector.h>
 
 #include <DUtils/DUtils.h>
 #include <DUtilsCV/DUtilsCV.h>

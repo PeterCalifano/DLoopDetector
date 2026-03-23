@@ -11,7 +11,7 @@
 #include <vector>
 
 // DLoopDetector and DBoW2
-#include "DLoopDetector.h"   // defines BriefLoopDetector
+#include <DLoopDetector/DLoopDetector.h> // defines BriefLoopDetector
 #include <DBoW2/DBoW2.h>     // defines BriefVocabulary
 #include <DVision/DVision.h> // Brief
 

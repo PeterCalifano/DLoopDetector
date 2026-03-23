@@ -19,7 +19,7 @@
 #include <opencv2/highgui.hpp>
 
 // DLoopDetector and DBoW2
-#include "DLoopDetector.h"
+#include <DLoopDetector/DLoopDetector.h>
 #include <DBoW2/DBoW2.h>
 #include <DUtils/DUtils.h>
 #include <DUtilsCV/DUtilsCV.h>

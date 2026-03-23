@@ -47,9 +47,9 @@
 
 #include <DBoW2/DBoW2.h>
 #include "TemplatedLoopDetector.h"
-#include "FORB.h"
-#include "FBrief.h"
-#include "FSurf64.h"
+#include <DBoW2/FORB.h>
+#include <DBoW2/FBrief.h>
+#include <DBoW2/FSurf64.h>
 
 /// ORB Loop Detector
 typedef DLoopDetector::TemplatedLoopDetector<FORB::TDescriptor, FORB> OrbLoopDetector;
@@ -61,4 +61,3 @@ typedef DLoopDetector::TemplatedLoopDetector<FSurf64::TDescriptor, FSurf64> Surf
 typedef DLoopDetector::TemplatedLoopDetector<FBrief::TDescriptor, FBrief> BriefLoopDetector;
 
 #endif
-
