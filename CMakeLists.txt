@@ -1,147 +1,110 @@
-option (BUILD_AS_STANDALONE_PROJECT "Build DLoopDetector as a standalone project" ON) #DEVNOTE must be true to build DLoopDetector in the current configuration!
-option (BUILD_BINARY_PROGRAMS  "Build standalone programs to run loop detector on a sequence of images" ON)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
-if (BUILD_AS_STANDALONE_PROJECT)
-  cmake_minimum_required(VERSION 3.10)
-  project(DLoopDetector)
+project(DLoopDetector VERSION 0.1.0 LANGUAGES CXX)
 
-  # Set paths to install dir of DBoW2 and DLib
-  set(DBoW2_INSTALL_DIR "/home/peterc/devDir/SLAM-repos/loopClosures_for_SpaceNav/lib/DBoW2_PeterCdev/install" CACHE PATH "DBoW2 install directory")
-  set(DLib_INSTALL_DIR  "/home/peterc/devDir/SLAM-repos/loopClosures_for_SpaceNav/lib/DLib_PeterCdev/install"  CACHE PATH "DLib install directory")
-
-  list(APPEND CMAKE_PREFIX_PATH "${DBoW2_INSTALL_DIR}")
-  list(APPEND CMAKE_PREFIX_PATH "${DLib_INSTALL_DIR}")
-
-  # Set CXX standard
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED OFF)
-
-# Set default build type to Release
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-    "MinSizeRel" "RelWithDebInfo")
+set(BUILD_AS_MAIN_PROJECT ON)
+if(NOT CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(BUILD_AS_MAIN_PROJECT OFF)
 endif()
 
-#set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
+endif()
 
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+find_package(OpenCV 4.2 REQUIRED)
+
+set(DLOOP_DBOW2_TARGET "")
+set(DLOOP_DLIB_TARGET "")
+
+if(TARGET DBoW2)
+  set(DLOOP_DBOW2_TARGET DBoW2)
+elseif(TARGET DBoW2::DBoW2)
+  set(DLOOP_DBOW2_TARGET DBoW2::DBoW2)
 else()
-
-endif()
-
-include(ExternalProject)
-
-if(MSVC)
-  add_compile_options(/W4)
-else()
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
-set(HDRS include/DLoopDetector/DLoopDetector.h include/DLoopDetector/TemplatedLoopDetector.h)
-
-set(DEPENDENCY_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies)
-set(DEPENDENCY_INSTALL_DIR ${DEPENDENCY_DIR}/install)
-set(DEPENDENCY_CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-
-if(DEFINED OpenCV_DIR)
-    set(DEPENDENCY_CMAKE_ARGS ${DEPENDENCY_CMAKE_ARGS} -DOpenCV_DIR=${OpenCV_DIR})
-endif()
-
-if (BUILD_AS_STANDALONE_PROJECT)
-  find_package(OpenMP QUIET)
-  find_package(OpenCV REQUIRED)
-
   find_package(DBoW2 REQUIRED)
-  find_package(DLib REQUIRED)
+  if(TARGET DBoW2::DBoW2)
+    set(DLOOP_DBOW2_TARGET DBoW2::DBoW2)
+  elseif(TARGET DBoW2)
+    set(DLOOP_DBOW2_TARGET DBoW2)
+  endif()
 endif()
 
-include_directories(${OpenCV_INCLUDE_DIRS})
-
-if (OpenMP_CXX_FOUND)
-    message("OpenMP found")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+if(TARGET DLib)
+  set(DLOOP_DLIB_TARGET DLib)
+elseif(TARGET DLib::DLib)
+  set(DLOOP_DLIB_TARGET DLib::DLib)
 else()
-    set(OpenMP_CXX_FOUND OFF)
+  find_package(DLib REQUIRED)
+  if(TARGET DLib::DLib)
+    set(DLOOP_DLIB_TARGET DLib::DLib)
+  elseif(TARGET DLib)
+    set(DLOOP_DLIB_TARGET DLib)
+  endif()
 endif()
 
-# Define macro to get dependencies info
-macro(GetDependency name other_dependency)
-  find_package(${name} QUIET
-    PATHS ${DEPENDENCY_INSTALL_DIR})
-  if(${${name}_FOUND})
-    message("${name} library found, using it from the system")
-    include_directories(${${name}_INCLUDE_DIRS})
-    add_custom_target(${name}_dep)
-  else(${${name}_FOUND})
-    message("${name} library not found in the system, it will be downloaded on build")
-    option(DOWNLOAD_${name}_dependency "Download ${name} dependency" ON)
-    if(${DOWNLOAD_${name}_dependency})
-      if(NOT ${other_dependency})
-        set(dependency ${other_dependency}_dep)
-      endif()
-      ExternalProject_Add(${name}
-        PREFIX ${DEPENDENCY_DIR}
-        GIT_REPOSITORY http://github.com/dorian3d/${name}
-        GIT_TAG master
-        INSTALL_DIR ${DEPENDENCY_INSTALL_DIR}
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> ${DEPENDENCY_CMAKE_ARGS}
-        DEPENDS ${dependency})
-      add_custom_target(${name}_dep ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} DEPENDS ${name})
-    else()
-      message(SEND_ERROR "Please, activate DOWNLOAD_${name}_dependency option or download manually")
-    endif(${DOWNLOAD_${name}_dependency})
-  endif(${${name}_FOUND})
-endmacro(GetDependency)
+if(NOT DLOOP_DBOW2_TARGET OR NOT DLOOP_DLIB_TARGET)
+  message(FATAL_ERROR "Failed to resolve DBoW2 and DLib targets for DLoopDetector.")
+endif()
 
-# DEVNOTE removed
-#GetDependency(DLib "")
-#GetDependency(DBoW2 DLib)
-#add_custom_target(Dependencies ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR} DEPENDS DBoW2_dep DLib_dep)
+add_library(${PROJECT_NAME} INTERFACE)
+if(NOT TARGET ${PROJECT_NAME}::${PROJECT_NAME})
+  add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+endif()
+target_include_directories(${PROJECT_NAME} INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+target_include_directories(${PROJECT_NAME} INTERFACE ${OpenCV_INCLUDE_DIRS})
 
-# Add include directories
-include_directories(include/DLoopDetector/)
+get_target_property(DLOOP_DBOW2_INCLUDE_DIRS ${DLOOP_DBOW2_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+if(DLOOP_DBOW2_INCLUDE_DIRS)
+  target_include_directories(${PROJECT_NAME} INTERFACE ${DLOOP_DBOW2_INCLUDE_DIRS})
+endif()
 
-#### Binary (standalone) programs configuration
-if(BUILD_BINARY_PROGRAMS)
+get_target_property(DLOOP_DLIB_INCLUDE_DIRS ${DLOOP_DLIB_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+if(DLOOP_DLIB_INCLUDE_DIRS)
+  target_include_directories(${PROJECT_NAME} INTERFACE ${DLOOP_DLIB_INCLUDE_DIRS})
+endif()
 
-  include_directories(src)
-  add_subdirectory(src)
+target_link_libraries(${PROJECT_NAME} INTERFACE
+                      ${OpenCV_LIBS}
+                      ${DLOOP_DBOW2_TARGET}
+                      ${DLOOP_DLIB_TARGET})
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
-endif(BUILD_BINARY_PROGRAMS)
+add_subdirectory(src)
 
-#if(BUILD_DemoSURF)
-#  add_executable(demo_surf demo/demo_surf.cpp)
-#  target_link_libraries(demo_surf ${OpenCV_LIBS} ${DLib_LIBS} ${DBoW2_LIBS})
-#endif(BUILD_DemoSURF)
+if(BUILD_AS_MAIN_PROJECT)
+  set(EXPORT_TARGET_DEPS OpenCV DBoW2 DLib)
 
-if(BUILD_BINARY_PROGRAMS)
+  install(TARGETS ${PROJECT_NAME}
+          EXPORT ${PROJECT_NAME}
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(DIRECTORY include/DLoopDetector DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
-  set(RESOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources/)
-  set(RESOURCE_FILE ${CMAKE_CURRENT_BINARY_DIR}/resources.tar.gz)
-  if(NOT EXISTS ${RESOURCE_DIR})
-    if(EXISTS ${RESOURCE_FILE})
-      execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${RESOURCE_FILE})
-    else()
-      message("To run the demo application, please download \
-https://drive.google.com/uc?export=download&id=1MpZwPjXDAUxKfSTpeCjG0PAUpaeWuo7D \
-into ${RESOURCE_FILE} and run cmake again.")
-    endif()
-  endif(NOT EXISTS ${RESOURCE_DIR})
+  install(EXPORT ${PROJECT_NAME}
+          FILE ${PROJECT_NAME}Target.cmake
+          NAMESPACE ${PROJECT_NAME}::
+          DESTINATION lib/cmake/${PROJECT_NAME})
 
-endif(BUILD_BINARY_PROGRAMS)
+  write_basic_package_version_file(
+      "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+      VERSION ${PROJECT_VERSION}
+      COMPATIBILITY AnyNewerVersion)
 
-# DEVNOTE: TODO update configuration
+  configure_package_config_file(
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/DLoopDetectorConfig.cmake.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+      INSTALL_DESTINATION lib/cmake/${PROJECT_NAME})
 
-# Install configuration
-configure_file(src/DLoopDetector.cmake.in
-  "${PROJECT_BINARY_DIR}/DLoopDetectorConfig.cmake" @ONLY)
+  install(FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+      "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+      DESTINATION lib/cmake/${PROJECT_NAME})
 
-install(DIRECTORY include/DLoopDetector DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DLoopDetectorConfig.cmake"
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
-
-install(FILES "${PROJECT_BINARY_DIR}/DLoopDetectorConfig.cmake" 
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DLoopDetector/)
-
-install(DIRECTORY ${DEPENDENCY_INSTALL_DIR}/ DESTINATION ${CMAKE_INSTALL_PREFIX} OPTIONAL)
+  export(EXPORT ${PROJECT_NAME}
+         FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/${PROJECT_NAME}Target.cmake")
+endif()

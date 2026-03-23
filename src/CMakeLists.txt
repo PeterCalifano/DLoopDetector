@@ -2,5 +2,6 @@
 add_subdirectory(core)
 add_subdirectory(specializations)
 
-# Add standalone programs src files
-add_subdirectory(bin)
+if(BUILD_AS_MAIN_PROJECT)
+  add_subdirectory(bin)
+endif()
