@@ -17,7 +17,6 @@ include(CMakePackageConfigHelpers)
 find_package(OpenCV 4.2 REQUIRED)
 
 set(DLOOP_DBOW2_TARGET "")
-set(DLOOP_DLIB_TARGET "")
 
 if(TARGET DBoW2)
   set(DLOOP_DBOW2_TARGET DBoW2)
@@ -32,21 +31,8 @@ else()
   endif()
 endif()
 
-if(TARGET DLib)
-  set(DLOOP_DLIB_TARGET DLib)
-elseif(TARGET DLib::DLib)
-  set(DLOOP_DLIB_TARGET DLib::DLib)
-else()
-  find_package(DLib REQUIRED)
-  if(TARGET DLib::DLib)
-    set(DLOOP_DLIB_TARGET DLib::DLib)
-  elseif(TARGET DLib)
-    set(DLOOP_DLIB_TARGET DLib)
-  endif()
-endif()
-
-if(NOT DLOOP_DBOW2_TARGET OR NOT DLOOP_DLIB_TARGET)
-  message(FATAL_ERROR "Failed to resolve DBoW2 and DLib targets for DLoopDetector.")
+if(NOT DLOOP_DBOW2_TARGET)
+  message(FATAL_ERROR "Failed to resolve the DBoW2 target for DLoopDetector.")
 endif()
 
 add_library(${PROJECT_NAME} INTERFACE)
@@ -58,32 +44,19 @@ target_include_directories(${PROJECT_NAME} INTERFACE
                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_include_directories(${PROJECT_NAME} INTERFACE ${OpenCV_INCLUDE_DIRS})
 
-get_target_property(DLOOP_DBOW2_INCLUDE_DIRS ${DLOOP_DBOW2_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-if(DLOOP_DBOW2_INCLUDE_DIRS)
-  target_include_directories(${PROJECT_NAME} INTERFACE ${DLOOP_DBOW2_INCLUDE_DIRS})
-endif()
-
-get_target_property(DLOOP_DLIB_INCLUDE_DIRS ${DLOOP_DLIB_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-if(DLOOP_DLIB_INCLUDE_DIRS)
-  target_include_directories(${PROJECT_NAME} INTERFACE ${DLOOP_DLIB_INCLUDE_DIRS})
-endif()
-
 target_link_libraries(${PROJECT_NAME} INTERFACE
                       ${OpenCV_LIBS}
-                      ${DLOOP_DBOW2_TARGET}
-                      ${DLOOP_DLIB_TARGET})
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
-
-add_subdirectory(src)
+                      ${DLOOP_DBOW2_TARGET})
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 
 if(BUILD_AS_MAIN_PROJECT)
-  set(EXPORT_TARGET_DEPS OpenCV DBoW2 DLib)
+  set(EXPORT_TARGET_DEPS OpenCV DBoW2)
 
   install(TARGETS ${PROJECT_NAME}
           EXPORT ${PROJECT_NAME}
           INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   install(DIRECTORY include/DLoopDetector DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-  install(DIRECTORY resources DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+  install(FILES LICENSE.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/licenses)
 
   install(EXPORT ${PROJECT_NAME}
           FILE ${PROJECT_NAME}Target.cmake

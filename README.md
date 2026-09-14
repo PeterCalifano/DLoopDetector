@@ -3,11 +3,22 @@ DLoopDetector
 
 ## Overview
 
-DLoopDetector is an open source C++ library to detect loops in a sequence of images collected by a mobile robot. It implements the algorithm presented in GalvezTRO12, based on a bag-of-words database created from image local descriptors, and temporal and geometrical constraints. The current implementation includes versions to work with SURF64 and BRIEF descriptors. DLoopDetector is based on the DBoW2 library, so that it can work with any other type of descriptor with little effort.
+DLoopDetector is an open source C++ library for detecting loops in a sequence of local-feature
+frames. It implements the approach presented in GalvezTRO12 using a DBoW2 database, temporal
+islands, descriptor matching, and geometric verification.
 
-DLoopDetector requires OpenCV and the `boost::dynamic_bitset` class in order to use the BRIEF version.
+This fork uses a C++20 descriptor-policy contract. Its built-in aliases support ORB, BRIEF, SURF64,
+and SIFT; fixed-float policies also support learned descriptor widths without a runtime feature-name
+registry. The default implementation separates `CBowCandidateRetriever<TPolicy>` from
+`CKnnFundamentalVerifier<TPolicy>` and composes them through `TemplatedLoopDetector<TPolicy>`.
 
-DLoopDetector has been tested on several real datasets, yielding an execution time of ~9 ms to detect a loop a in a sequence with more than 19000 images (without considering the feature extraction). When BRIEF descriptors were used, the feature extraction and the loop detection were performed in 16 ms on average.
+The historical `TemplatedLoopDetector` source adapter remains available for migration, but its
+legacy DI, FLANN, and exhaustive geometry names intentionally select the same deterministic
+policy-distance verifier. It does not reproduce the old NSS score normalization or bit-for-bit
+historical temporal/island tuning. ORB, BRIEF, SURF64, and SIFT themselves remain fully supported
+through the new vocabulary, retrieval, and geometric-verification contracts.
+
+DLoopDetector requires C++20, OpenCV 4.2 or newer, and DBoW2. It no longer depends on DLib or Boost.
 
 ## Citing
 
@@ -28,18 +39,11 @@ If you use this software in an academic work, please cite:
 
 ## Install and usage notes
 
-DLoopDetector requires [DLib](https://github.com/dorian3d/DLib) and [DBoW2](https://github.com/dorian3d/DBoW2), which are installed automatically.
+Install DBoW2 first or expose its build/install prefix through `CMAKE_PREFIX_PATH`, then configure
+this project normally. `DLoopDetector` is an interface target exported as
+`DLoopDetector::DLoopDetector`.
 
-DLoopDetector requires OpenCV and the `boost::dynamic_bitset` class in order to use the BRIEF version. You can install Boost by typing:
-
-    $ sudo apt-get install libboost-dev
-
-
-To check how to use DLoopDetector, compile the demo applications. This demo includes the DLoopDetector classes, bag-of-words vocabularies with 10^6 words to use with SURF64 or BRIEF features, a small collection of images of the Bicocca 2009-02-25b dataset of the Rawseeds FP-6 project and a demo application to find loops in these images.
-
-Note that the demo applications require some external resources that are downloaded automatically when they are activated in CMake. The resource file is 374MB so it may take a while to download.
-
-You can run either demo_surf or demo_brief. When the demo is running, you should see a window with the current image, a window with the trajectory of the robot and the status of the detection process in the console:
-![Loop detector](http://dorian3d.github.com/other/images/dloop.png)
-
-The main functionality of the demo is written in the `demoDetector.h` class. Check it to see how to change the parameters of the loop detector.
+Applications select the descriptor policy at compile time. They provide original-image
+`cv::KeyPoint` coordinates plus an aligned descriptor batch. DLoopDetector owns retrieval and
+geometry only; inference, model loading, tensor layouts, thresholding, coordinate restoration, and
+transport remain application responsibilities.
