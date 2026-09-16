@@ -9,7 +9,7 @@
 #pragma once
 
 #include "CBowCandidateRetriever.h"
-#include "CKnnFundamentalVerifier.h"
+#include "CKnnFundamentalMatrixVerifier.h"
 #include "LoopDetectionContracts.h"
 
 #include <DBoW2/DescriptorPolicy.h>
@@ -77,8 +77,8 @@ namespace DLoopDetector
      *
      * The former monolithic implementation is now an adapter: BoW and temporal state belong to
      * CBowCandidateRetriever, while descriptor matching and fundamental-matrix RANSAC belong to
-     * CKnnFundamentalVerifier. DI, FLANN, and exhaustive modes use the same deterministic policy
-     * KNN verifier; GEOM_NONE explicitly bypasses geometry.
+     * CKnnFundamentalMatrixVerifier. DI, FLANN, and exhaustive modes use the same deterministic
+     * policy KNN verifier; GEOM_NONE explicitly bypasses geometry.
      *
      * @tparam TPolicy Local descriptor policy selected at compile time.
      */
@@ -580,7 +580,7 @@ namespace DLoopDetector
 
         Parameters parameters_;
         std::unique_ptr<CBowCandidateRetriever<TPolicy>> retriever_;
-        CKnnFundamentalVerifier<TPolicy> verifier_;
+        CKnnFundamentalMatrixVerifier<TPolicy> verifier_;
         std::vector<std::vector<cv::KeyPoint>> keypoint_history_;
         std::vector<std::vector<Descriptor>> descriptor_history_;
     };

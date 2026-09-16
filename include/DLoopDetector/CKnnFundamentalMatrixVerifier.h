@@ -1,5 +1,5 @@
 /**
- * @file CKnnFundamentalVerifier.h
+ * @file CKnnFundamentalMatrixVerifier.h
  * @brief Policy-based two-nearest matching and fundamental-matrix verification.
  * @author Dorian Galvez-Lopez and Pietro Califano
  * @date 2026-08-28
@@ -36,7 +36,7 @@ namespace DLoopDetector
     };
 
     /**
-     * @brief Verify local-feature geometry using unique KNN matches and RANSAC.
+     * @brief Verify fundamental-matrix geometry with unique two-nearest matches and RANSAC.
      *
      * Matching is brute-force through the descriptor policy so binary and float descriptors share
      * one implementation. The class owns no frame data and is safe to reuse for independent pairs.
@@ -44,7 +44,7 @@ namespace DLoopDetector
      * @tparam TPolicy Descriptor policy supplying validation and distance operations.
      */
     template <DBoW2::DescriptorPolicy TPolicy>
-    class CKnnFundamentalVerifier
+    class CKnnFundamentalMatrixVerifier
     {
       public:
         using Policy = TPolicy;
@@ -55,7 +55,7 @@ namespace DLoopDetector
          * @param parameters Verification parameters.
          * @throws std::invalid_argument If any gate is outside its valid domain.
          */
-        explicit CKnnFundamentalVerifier(
+        explicit CKnnFundamentalMatrixVerifier(
             const SGeometricVerificationParameters &parameters = {})
             : parameters_(parameters)
         {
@@ -290,6 +290,6 @@ namespace DLoopDetector
     };
 
     static_assert(GeometricVerifier<
-                  CKnnFundamentalVerifier<DBoW2::FixedFloatDescriptorPolicy<1>>,
+                  CKnnFundamentalMatrixVerifier<DBoW2::FixedFloatDescriptorPolicy<1>>,
                   DBoW2::FixedFloatDescriptorPolicy<1>>);
 } // namespace DLoopDetector

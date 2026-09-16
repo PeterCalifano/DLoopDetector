@@ -9,7 +9,7 @@
 #pragma once
 
 #include "CBowCandidateRetriever.h"
-#include "CKnnFundamentalVerifier.h"
+#include "CKnnFundamentalMatrixVerifier.h"
 #include "LoopDetectionContracts.h"
 #include "TemplatedLoopDetector.h"
 

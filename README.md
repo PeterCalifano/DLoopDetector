@@ -10,7 +10,8 @@ islands, descriptor matching, and geometric verification.
 This fork uses a C++20 descriptor-policy contract. Its built-in aliases support ORB, BRIEF, SURF64,
 and SIFT; fixed-float policies also support learned descriptor widths without a runtime feature-name
 registry. The default implementation separates `CBowCandidateRetriever<TPolicy>` from
-`CKnnFundamentalVerifier<TPolicy>` and composes them through `TemplatedLoopDetector<TPolicy>`.
+`CKnnFundamentalMatrixVerifier<TPolicy>` and composes them through
+`TemplatedLoopDetector<TPolicy>`.
 
 The historical `TemplatedLoopDetector` source adapter remains available for migration, but its
 legacy DI, FLANN, and exhaustive geometry names intentionally select the same deterministic
