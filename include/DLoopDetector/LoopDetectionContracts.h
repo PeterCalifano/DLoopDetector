@@ -1,8 +1,8 @@
 /**
  * @file LoopDetectionContracts.h
  * @brief C++20 contracts and result types for split loop detection.
- * @author Dorian Galvez-Lopez and Pietro Califano
- * @date 2026-08-28
+ * @author Pietro Califano, and Codex GPT-5.6
+ * @date 2026-09-16
  * @copyright See the DLoopDetector LICENSE.txt file.
  */
 
@@ -18,6 +18,7 @@
 #include <optional>
 #include <span>
 #include <utility>
+#include <vector>
 
 namespace DLoopDetector
 {
@@ -60,16 +61,18 @@ namespace DLoopDetector
     /** @brief Geometric verification outcome with diagnostic match counts. */
     struct SGeometricVerificationResult
     {
-        EGeometricVerificationStatus status = ///< Expected verification outcome.
-            EGeometricVerificationStatus::insufficient_features;
+        /// Expected verification outcome.
+        EGeometricVerificationStatus status = EGeometricVerificationStatus::insufficient_features;
         std::size_t correspondence_count = 0; ///< Matches entering RANSAC.
-        std::size_t inlier_count = 0; ///< RANSAC inliers, or zero without a valid model.
+        std::size_t inlier_count = 0; ///< RANSAC support count, including rejected loops.
+        /// RANSAC inlier descriptor indices, ordered by reference index on acceptance only.
+        std::vector<std::pair<std::size_t, std::size_t>> inlier_index_pairs;
 
         /**
          * @brief Return true only when the RANSAC model passes the inlier gate.
          * @return True for an accepted model; false for every rejection status.
          */
-        [[nodiscard]] bool Accepted() const noexcept
+        [[nodiscard]] bool accepted() const noexcept
         {
             return status == EGeometricVerificationStatus::accepted;
         }
@@ -102,9 +105,12 @@ namespace DLoopDetector
     concept GeometricVerifier = DBoW2::DescriptorPolicy<TPolicy> && requires(
         const TVerifier &verifier,
         std::span<const cv::KeyPoint> keypoints,
+        std::span<const cv::Point2d> points,
         std::span<const typename TPolicy::Descriptor> descriptors)
     {
-        { verifier.Verify(keypoints, descriptors, keypoints, descriptors) } ->
+        { verifier.verify(keypoints, descriptors, keypoints, descriptors) } ->
+            std::same_as<SGeometricVerificationResult>;
+        { verifier.verifyPoints(points, descriptors, points, descriptors) } ->
             std::same_as<SGeometricVerificationResult>;
     };
 } // namespace DLoopDetector

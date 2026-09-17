@@ -1,8 +1,8 @@
 /**
  * @file CKnnFundamentalMatrixVerifier.h
  * @brief Policy-based two-nearest matching and fundamental-matrix verification.
- * @author Dorian Galvez-Lopez and Pietro Califano
- * @date 2026-08-28
+ * @author Dorian Galvez-Lopez, Pietro Califano, and Codex GPT-5.6
+ * @date 2026-09-16
  * @copyright See the DLoopDetector LICENSE.txt file.
  */
 
@@ -59,7 +59,7 @@ namespace DLoopDetector
             const SGeometricVerificationParameters &parameters = {})
             : parameters_(parameters)
         {
-            ValidateParameters();
+            validateParameters();
         }
 
         /**
@@ -71,19 +71,59 @@ namespace DLoopDetector
          * @return Explicit expected outcome plus correspondence and inlier counts.
          * @throws std::invalid_argument If keypoint/descriptor counts differ or data is nonfinite.
          */
-        [[nodiscard]] SGeometricVerificationResult Verify(
+        [[nodiscard]] SGeometricVerificationResult verify(
             const std::span<const cv::KeyPoint> reference_keypoints,
             const std::span<const Descriptor> reference_descriptors,
             const std::span<const cv::KeyPoint> query_keypoints,
             const std::span<const Descriptor> query_descriptors) const
         {
-            // Validate both frame contracts once before entering quadratic matching.
-            ValidateFrame(reference_keypoints, reference_descriptors, "reference");
-            ValidateFrame(query_keypoints, query_descriptors, "query");
+            if (reference_keypoints.size() != reference_descriptors.size() ||
+                query_keypoints.size() != query_descriptors.size())
+            {
+                throw std::invalid_argument("Verifier keypoint and descriptor counts differ.");
+            }
 
-            // Reject frames that cannot provide two neighbors or a solvable query set.
+            // Preserve the compatibility entry point while sharing the double-pixel core.
+            std::vector<cv::Point2d> reference_points;
+            std::vector<cv::Point2d> query_points;
+            reference_points.reserve(reference_keypoints.size());
+            query_points.reserve(query_keypoints.size());
+            for (const cv::KeyPoint &keypoint : reference_keypoints)
+            {
+                reference_points.emplace_back(keypoint.pt.x, keypoint.pt.y);
+            }
+
+            for (const cv::KeyPoint &keypoint : query_keypoints)
+            {
+                query_points.emplace_back(keypoint.pt.x, keypoint.pt.y);
+            }
+
+            return verifyPoints(reference_points, reference_descriptors,
+                                query_points, query_descriptors);
+        }
+
+        /**
+         * @brief Match and verify original-image double-precision point coordinates.
+         * @param reference_keypoints Reference image pixels aligned with descriptors.
+         * @param reference_descriptors Descriptors aligned with reference pixels.
+         * @param query_keypoints Query image pixels aligned with descriptors.
+         * @param query_descriptors Descriptors aligned with query pixels.
+         * @return Explicit outcome and fixed RANSAC inlier indices.
+         * @throws std::invalid_argument If counts differ or any input is nonfinite.
+         */
+        [[nodiscard]] SGeometricVerificationResult verifyPoints(
+            const std::span<const cv::Point2d> reference_keypoints,
+            const std::span<const Descriptor> reference_descriptors,
+            const std::span<const cv::Point2d> query_keypoints,
+            const std::span<const Descriptor> query_descriptors) const
+        {
+            // Validate both frame contracts once before entering quadratic matching.
+            validateFrame(reference_keypoints, reference_descriptors, "reference");
+            validateFrame(query_keypoints, query_descriptors, "query");
+
+            // Reject a frame that cannot supply the required number of unique matches.
             SGeometricVerificationResult result;
-            if (reference_descriptors.size() < 2 ||
+            if (reference_descriptors.size() < parameters_.minimum_correspondences ||
                 query_descriptors.size() < parameters_.minimum_correspondences)
             {
                 result.status = EGeometricVerificationStatus::insufficient_features;
@@ -92,7 +132,7 @@ namespace DLoopDetector
 
             // Retain ratio-tested matches with at most one query per reference descriptor.
             std::vector<SDescriptorMatch> matches =
-                MatchUnique(reference_descriptors, query_descriptors);
+                matchUnique(reference_descriptors, query_descriptors);
             result.correspondence_count = matches.size();
 
             if (matches.size() < parameters_.minimum_correspondences)
@@ -102,15 +142,15 @@ namespace DLoopDetector
             }
 
             // Project descriptor indices into aligned image coordinates for RANSAC.
-            std::vector<cv::Point2f> reference_points;
-            std::vector<cv::Point2f> query_points;
+            std::vector<cv::Point2d> reference_points;
+            std::vector<cv::Point2d> query_points;
             reference_points.reserve(matches.size());
             query_points.reserve(matches.size());
 
             for (const SDescriptorMatch &match : matches)
             {
-                reference_points.push_back(reference_keypoints[match.reference_index].pt);
-                query_points.push_back(query_keypoints[match.query_index].pt);
+                reference_points.push_back(reference_keypoints[match.reference_index]);
+                query_points.push_back(query_keypoints[match.query_index]);
             }
 
             // Estimate one fundamental model and reject malformed or rank-deficient results.
@@ -120,17 +160,40 @@ namespace DLoopDetector
                 parameters_.maximum_reprojection_error, parameters_.ransac_confidence,
                 parameters_.maximum_ransac_iterations, inlier_mask);
 
-            if (IsDegenerate(fundamental_matrix))
+            if (isDegenerate(fundamental_matrix))
             {
                 result.status = EGeometricVerificationStatus::degenerate_configuration;
                 return result;
             }
 
             // Accept the valid model only after it reaches the configured inlier gate.
+            if (inlier_mask.type() != CV_8UC1 ||
+                inlier_mask.total() != matches.size() || !inlier_mask.isContinuous())
+            {
+                result.status = EGeometricVerificationStatus::degenerate_configuration;
+                return result;
+            }
             result.inlier_count = static_cast<std::size_t>(cv::countNonZero(inlier_mask));
             result.status = result.inlier_count >= parameters_.minimum_inliers
                                 ? EGeometricVerificationStatus::accepted
                                 : EGeometricVerificationStatus::ransac_rejected;
+
+            if (result.accepted())
+            {
+                // Expose the fixed support set; leave final measurement fitting to the caller.
+                result.inlier_index_pairs.reserve(result.inlier_count);
+                const auto *mask_values = inlier_mask.ptr<uchar>();
+
+                for (std::size_t index = 0; index < matches.size(); ++index)
+                {
+                    if (mask_values[index] != 0)
+                    {
+                        result.inlier_index_pairs.emplace_back(
+                            matches[index].reference_index, matches[index].query_index);
+                    }
+                }
+            }
+
             return result;
         }
 
@@ -142,8 +205,9 @@ namespace DLoopDetector
             double distance = 0.0;
         };
 
-        void ValidateParameters() const
+        void validateParameters() const
         {
+            // Validate matching and RANSAC contracts before processing any frame data.
             if (!std::isfinite(parameters_.maximum_neighbor_ratio) ||
                 !(parameters_.maximum_neighbor_ratio > 0.0 &&
                   parameters_.maximum_neighbor_ratio < 1.0))
@@ -170,8 +234,8 @@ namespace DLoopDetector
             }
         }
 
-        static void ValidateFrame(
-            const std::span<const cv::KeyPoint> keypoints,
+        static void validateFrame(
+            const std::span<const cv::Point2d> keypoints,
             const std::span<const Descriptor> descriptors,
             const char *frame_name)
         {
@@ -182,9 +246,9 @@ namespace DLoopDetector
             }
 
             // Reject nonfinite image coordinates before invoking OpenCV geometry.
-            for (const cv::KeyPoint &keypoint : keypoints)
+            for (const cv::Point2d &keypoint : keypoints)
             {
-                if (!std::isfinite(keypoint.pt.x) || !std::isfinite(keypoint.pt.y))
+                if (!std::isfinite(keypoint.x) || !std::isfinite(keypoint.y))
                 {
                     throw std::invalid_argument(std::string(frame_name) +
                                                 " keypoints contain nonfinite coordinates.");
@@ -204,7 +268,7 @@ namespace DLoopDetector
          * @param query_descriptors Query descriptors matched against the reference set.
          * @return Deterministic matches containing at most one query per reference descriptor.
          */
-        [[nodiscard]] std::vector<SDescriptorMatch> MatchUnique(
+        [[nodiscard]] std::vector<SDescriptorMatch> matchUnique(
             const std::span<const Descriptor> reference_descriptors,
             const std::span<const Descriptor> query_descriptors) const
         {
@@ -219,7 +283,7 @@ namespace DLoopDetector
                     reference_index, no_query, std::numeric_limits<double>::infinity()};
             }
 
-            // Find the two nearest references for every query descriptor.
+            // Scan references in index order; keep the first on equal distances.
             for (std::size_t query_index = 0;
                  query_index < query_descriptors.size(); ++query_index)
             {
@@ -244,7 +308,7 @@ namespace DLoopDetector
                     }
                 }
 
-                // Apply the ratio gate and resolve reference collisions by minimum distance.
+                // Apply the ratio gate; keep the first query on equal collision distances.
                 if (std::isfinite(second_distance) &&
                     best_distance < parameters_.maximum_neighbor_ratio * second_distance)
                 {
@@ -269,10 +333,11 @@ namespace DLoopDetector
          * @param fundamental_matrix OpenCV model returned by RANSAC.
          * @return True when the matrix cannot support geometric verification.
          */
-        [[nodiscard]] static bool IsDegenerate(const cv::Mat &fundamental_matrix)
+        [[nodiscard]] static bool isDegenerate(const cv::Mat &fundamental_matrix)
         {
             if (fundamental_matrix.empty() || fundamental_matrix.rows != 3 ||
-                fundamental_matrix.cols != 3 || !cv::checkRange(fundamental_matrix))
+                fundamental_matrix.cols != 3 || fundamental_matrix.type() != CV_64FC1 ||
+                !cv::checkRange(fundamental_matrix))
             {
                 return true;
             }

@@ -522,7 +522,7 @@ namespace DLoopDetector
             }
 
             // Translate the explicit verifier outcome into the historical status vocabulary.
-            const SGeometricVerificationResult geometry = verifier_.Verify(
+            const SGeometricVerificationResult geometry = verifier_.verify(
                 keypoint_history_[candidate_frame_id],
                 descriptor_history_[candidate_frame_id], query_keypoints, query_descriptors);
 
