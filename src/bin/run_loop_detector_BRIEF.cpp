@@ -30,15 +30,15 @@ using std::cout, std::string, std::vector, std::fstream, std::ios;
 
 // ----------------------------------------------------------------------------
 // TODO replace this with command line arguments
-static const std::string ROOT_PATH = "/home/peterc/devDir/SLAM-repos/loopClosures_for_SpaceNav/lib/DLoopDetector_PeterCdev"; // path to resources
+static const std::string RESOURCE_PATH = DLOOPDETECTOR_RESOURCE_DIR;
 
 // Concat paths
-static const std::string VOC_FILE = ROOT_PATH + "/resources/brief_k10L6.voc.gz"; // .voc.gz
-static const std::string IMAGE_DIR = ROOT_PATH + "/resources/images";
-static const std::string POSE_FILE = ROOT_PATH + "/resources/pose.txt";
+static const std::string VOC_FILE = RESOURCE_PATH + "/brief_k10L6.voc.gz"; // .voc.gz
+static const std::string IMAGE_DIR = RESOURCE_PATH + "/images";
+static const std::string POSE_FILE = RESOURCE_PATH + "/pose.txt";
 static const int IMAGE_W = 640; // image size
 static const int IMAGE_H = 480;
-static const std::string BRIEF_PATTERN_FILE = ROOT_PATH + "/resources/brief_pattern.yml";
+static const std::string BRIEF_PATTERN_FILE = RESOURCE_PATH + "/brief_pattern.yml";
 // ----------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
